@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EDAYA MAP - Prospective 2026</title>
+    <title>EDAYA MAP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -38,15 +38,15 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect, useRef } = React;
 
-        // --- CONFIGURATION FIREBASE (À REMPLIR) ---
+        // --- CONFIGURATION FIREBASE (À REMPLIR ABSOLUMENT) ---
         const firebaseConfig = {
-            apiKey: "VOTRE_API_KEY",
-            authDomain: "VOTRE_PROJET.firebaseapp.com",
-            databaseURL: "https://VOTRE_PROJET-default-rtdb.firebaseio.com",
-            projectId: "VOTRE_PROJET",
-            storageBucket: "VOTRE_PROJET.appspot.com",
-            messagingSenderId: "VOTRE_ID",
-            appId: "VOTRE_APP_ID"
+            apiKey: "TON_API_KEY",
+            authDomain: "TON_PROJET.firebaseapp.com",
+            databaseURL: "https://TON_PROJET-default-rtdb.firebaseio.com",
+            projectId: "TON_PROJET",
+            storageBucket: "TON_PROJET.appspot.com",
+            messagingSenderId: "TON_ID",
+            appId: "TON_APP_ID"
         };
 
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -76,14 +76,12 @@
             const [activeEntry, setActiveEntry] = useState(null);
             const fileInputRef = useRef(null);
 
-            // CONNEXION
             const handleLogin = (e) => {
                 e.preventDefault();
                 if (pass === 'EdayaMap') setStep('menu');
                 else alert('Mot de passe incorrect');
             };
 
-            // SYNC FIREBASE
             useEffect(() => {
                 if (step !== 'map') return;
                 const dataRef = db.ref(`opportunities_${country}`);
@@ -95,7 +93,6 @@
                 return () => dataRef.off();
             }, [step, country]);
 
-            // CARTE GEOJSON
             useEffect(() => {
                 if (step !== 'map') return;
                 const url = country === 'france' 
@@ -133,20 +130,37 @@
                 setModalMode(null);
             };
 
-            // IMPORT / EXPORT (Restaurés)
             const handleImport = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const content = event.target.result;
+                    // Détection du séparateur (point-virgule ou virgule)
                     const lines = content.split(/\r?\n/).filter(l => l.trim());
                     const sep = content.includes(';') ? ';' : ',';
+                    
                     const newData = lines.slice(1).map(line => {
+                        // Regex pour gérer les guillemets et les séparateurs
                         const parts = line.split(new RegExp(`${sep}(?=(?:(?:[^"]*"){2})*[^"]*$)`)).map(p => p.replace(/^"|"$/g, '').trim());
-                        return { name: parts[1], city: parts[2], dept: String(parts[3]), type: parts[4], cat: parts[5], url: parts[6], email: parts[7], address: parts[8] };
+                        return { 
+                            name: parts[1] || "", 
+                            city: parts[2] || "", 
+                            dept: String(parts[3] || ""), 
+                            type: parts[4] || "", 
+                            cat: parts[5] || "", 
+                            url: parts[6] || "", 
+                            email: parts[7] || "", 
+                            address: parts[8] || "" 
+                        };
                     });
-                    newData.forEach(item => db.ref(`opportunities_${country}`).push({ ...item, id: Date.now() + Math.random() }));
+                    
+                    if(confirm(`Importer ${newData.length} lignes dans la zone ${country.toUpperCase()} ?`)) {
+                        newData.forEach(item => {
+                            if(item.name) db.ref(`opportunities_${country}`).push({ ...item, id: Date.now() + Math.random() });
+                        });
+                        alert("Importation terminée !");
+                    }
                 };
                 reader.readAsText(file);
             };
@@ -170,8 +184,6 @@
                     return t && c && d;
                 });
             }, [localData, filters, selectedDept]);
-
-            // --- VUES ---
 
             if (step === 'login') return (
                 <div className="h-screen flex items-center justify-center bg-slate-950 p-6">
@@ -206,7 +218,7 @@
                     <header className="bg-slate-900 text-white p-5 flex justify-between items-center shadow-xl z-50">
                         <div className="flex items-center gap-4">
                             <button onClick={() => setStep('menu')} className="text-slate-400 hover:text-white transition-colors"><Icon name="x" /></button>
-                            <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">EDAYA MAP : {country}</h1>
+                            <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">EDAYA MAP</h1>
                         </div>
                         <div className="flex gap-3">
                             <button onClick={() => { setModalMode('add'); setActiveEntry({ name: '', city: '', dept: '', type: 'Lieu', cat: 'Accessible', url: '', email: '', address: '' }); }} className="bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-all">
@@ -227,10 +239,16 @@
                             <div className="p-6 space-y-4 border-b border-white/5 bg-slate-900/30">
                                 <div className="grid grid-cols-2 gap-3">
                                     <select onChange={(e) => setFilters(p => ({ ...p, type: e.target.value }))} className="w-full p-3 rounded-xl bg-slate-800 text-[11px] font-black outline-none border border-white/10">
-                                        <option value="All">TOUT TYPE</option><option>Lieu</option><option>Festival</option><option>Booker</option><option>Media Spé</option>
+                                        <option value="All">TOUT TYPE</option>
+                                        <option value="Lieu">LIEU</option>
+                                        <option value="Festival">FESTIVAL</option>
+                                        <option value="Booker">BOOKER</option>
+                                        <option value="Media Spé">MEDIA SPÉ</option>
                                     </select>
                                     <select onChange={(e) => setFilters(p => ({ ...p, cat: e.target.value }))} className="w-full p-3 rounded-xl bg-slate-800 text-[11px] font-black outline-none border border-white/10">
-                                        <option value="All">DISPONIBILITÉ</option><option>Accessible</option><option>Plus tard</option>
+                                        <option value="All">DISPONIBILITÉ</option>
+                                        <option value="Accessible">ACCESSIBLE</option>
+                                        <option value="Plus tard">PLUS TARD</option>
                                     </select>
                                 </div>
                             </div>
@@ -289,7 +307,7 @@
                                         <input required placeholder="Zone" className="p-4 bg-slate-900 rounded-2xl border border-white/10 font-bold" value={activeEntry.dept} onChange={e => setActiveEntry({...activeEntry, dept: e.target.value})} />
                                     </div>
                                     <textarea placeholder="Notes / Adresse" className="w-full p-4 bg-slate-900 rounded-2xl border border-white/10 font-bold" value={activeEntry.address} onChange={e => setActiveEntry({...activeEntry, address: e.target.value})} />
-                                    <button type="submit" className="w-full py-5 bg-indigo-600 rounded-[2rem] font-black uppercase tracking-widest text-xs">Sauvegarder dans le Cloud</button>
+                                    <button type="submit" className="w-full py-5 bg-indigo-600 rounded-[2rem] font-black uppercase tracking-widest text-xs">Sauvegarder</button>
                                 </form>
                             </div>
                         </div>
