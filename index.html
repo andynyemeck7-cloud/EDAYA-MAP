@@ -14,64 +14,46 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; margin: 0; padding: 0; height: 100vh; overflow: hidden; }
         
         .dept-path { fill: #1e293b; stroke: #334155; stroke-width: 0.6; transition: all 0.2s; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .dept-path.has-data { fill: #1e1b4b; stroke: #6366f1; stroke-width: 0.8; }
         .dept-path.selected { fill: #4338ca; stroke: #ffffff; stroke-width: 1.5; }
-        .map-bg { fill: transparent; cursor: default; }
+        
+        /* Layout Principal */
+        .app-container { display: flex; flex-direction: column; height: 100vh; }
 
-        /* Layout Desktop */
         @media (min-width: 1024px) {
-            .app-container { display: grid; grid-template-columns: 500px 1fr; height: calc(100vh - 80px); }
-            .sidebar-map { border-right: 1px solid rgba(255,255,255,0.05); height: 100%; overflow: hidden; }
-            .content-list { height: 100%; overflow-y: auto; }
+            .app-grid { display: grid; grid-template-columns: 1fr 1.2fr; height: calc(100vh - 70px); overflow: hidden; }
+            .sidebar-map { border-right: 1px solid rgba(255,255,255,0.05); }
         }
 
-        /* Système de Tiroir Mobile Amélioré */
+        /* Mobile : Map centrée et plus grande */
         @media (max-width: 1023px) {
+            .sidebar-map { height: 45vh; flex: none; background: rgba(15, 23, 42, 0.4); }
             .mobile-bottom-sheet {
                 position: fixed;
                 bottom: 0; left: 0; right: 0;
                 background: #0f172a;
+                border-top: 1px solid rgba(255,255,255,0.1);
                 border-top-left-radius: 2rem; border-top-right-radius: 2rem;
-                z-index: 50;
-                transition: transform 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+                z-index: 40;
+                transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
                 height: 75vh;
-                box-shadow: 0 -15px 35px rgba(0,0,0,0.8);
             }
-            .sheet-closed { transform: translateY(calc(75vh - 70px)); }
+            .sheet-closed { transform: translateY(calc(75vh - 60px)); }
             .sheet-open { transform: translateY(0); }
-            
-            .sheet-trigger-badge {
-                height: 70px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-            }
-            .badge-pill {
-                background: #4338ca;
-                padding: 8px 16px;
-                border-radius: 999px;
-                font-size: 10px;
-                font-weight: 900;
-                text-transform: uppercase;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
         }
 
-        .map-wrapper { width: 100%; height: 35vh; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #0f172a; }
-        @media (min-width: 1024px) { .map-wrapper { height: 100%; } }
-        
-        .france-svg { width: 100%; height: auto; max-height: 90%; transform: translateY(-20px); }
+        /* Correction France : Nord/Sud et Centrage */
+        .map-wrapper { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 10px; }
+        .france-svg { width: 100%; height: auto; max-height: 95%; transform: translateY(-25px); }
 
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .header-scroll { overflow-x: auto; white-space: nowrap; }
+        .header-scroll::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
@@ -97,11 +79,9 @@
             if (name === 'plus') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
             if (name === 'edit') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>;
             if (name === 'trash') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
-            if (name === 'chevron-up') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="18 15 12 9 6 15"></polyline></svg>;
-            if (name === 'chevron-down') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="6 9 12 15 18 9"></polyline></svg>;
-            if (name === 'upload') return <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>;
-            if (name === 'download') return <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
-            if (name === 'arrow-left') return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
+            if (name === 'upload') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>;
+            if (name === 'download') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
+            if (name === 'back') return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="15 18 9 12 15 6"></polyline></svg>;
             if (name === 'x') return <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
             return null;
         };
@@ -150,7 +130,7 @@
             }, [step, country]);
 
             const project = (coords) => {
-                if (country === 'france') return [(coords[0] + 5.15) * 44, (52.15 - coords[1]) * 64];
+                if (country === 'france') return [(coords[0] + 5.15) * 44, (52.25 - coords[1]) * 64]; 
                 return [(coords[0] - 2.5) * 120, (51.6 - coords[1]) * 180];
             };
 
@@ -173,9 +153,9 @@
             const deptsWithData = useMemo(() => {
                 const visibleSet = new Set();
                 localData.forEach(i => {
-                    const t = filters.type === 'All' || i.type === filters.type;
-                    const c = filters.cat === 'All' || i.cat === filters.cat;
-                    if (t && c) visibleSet.add(String(i.dept));
+                    if ((filters.type === 'All' || i.type === filters.type) && (filters.cat === 'All' || i.cat === filters.cat)) {
+                        visibleSet.add(String(i.dept));
+                    }
                 });
                 return visibleSet;
             }, [localData, filters]);
@@ -194,11 +174,11 @@
                         return { name: parts[1] || "", city: parts[2] || "", dept: String(parts[3] || "").replace(/^0(?=\d)/, ''), type: parts[4] || "", cat: parts[5] || "", url: parts[6] || "", email: parts[7] || "", address: parts[8] || "" };
                     }).filter(i => i.name);
                     const finalData = allData.filter(item => !existingNames.has(item.name.trim().toLowerCase()));
-                    if (finalData.length === 0) { alert("Rien de nouveau."); return; }
+                    if (finalData.length === 0) { alert("Pas de nouveautés."); return; }
                     if(confirm(`Importer ${finalData.length} fiches ?`)) {
                         try {
                             const promises = finalData.map(item => db.ref(`opportunities_${country}`).push({ ...item, id: Date.now() + Math.random() }));
-                            await Promise.all(promises); alert("Importation finie !");
+                            await Promise.all(promises); alert("Ok !");
                         } catch (err) { alert(err.message); }
                     }
                 };
@@ -225,26 +205,26 @@
 
             if (step === 'login') return (
                 <div className="h-screen flex items-center justify-center bg-slate-950 p-4">
-                    <form onSubmit={handleLogin} className="glass p-10 rounded-[2.5rem] w-full max-w-sm text-center shadow-2xl">
-                        <h1 className="text-2xl font-black italic mb-8 uppercase tracking-tighter">EDAYA MAP ACCESS</h1>
-                        <input type="password" placeholder="Mot de passe" className="w-full p-4 bg-slate-900/50 rounded-2xl border border-white/10 mb-6 outline-none text-center font-bold text-white shadow-inner focus:border-indigo-500 transition-colors" value={pass} onChange={e => setPass(e.target.value)} />
-                        <button type="submit" className="w-full py-4 bg-indigo-600 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl hover:bg-indigo-500 transition-colors">Entrer</button>
+                    <form onSubmit={handleLogin} className="glass p-10 rounded-[2.5rem] w-full max-w-sm text-center">
+                        <h1 className="text-2xl font-black italic mb-6 tracking-tighter uppercase">EDAYA MAP ACCESS</h1>
+                        <input type="password" placeholder="Mot de passe" className="w-full p-4 bg-slate-900 text-white rounded-xl border border-white/10 mb-4 text-center font-bold outline-none" value={pass} onChange={e => setPass(e.target.value)} />
+                        <button type="submit" className="w-full py-4 bg-indigo-600 rounded-xl font-black uppercase tracking-widest text-sm shadow-xl">Entrer</button>
                     </form>
                 </div>
             );
 
             if (step === 'menu') return (
-                <div className="h-screen flex items-center justify-center bg-slate-950 p-4">
-                    <div className="w-full max-w-md text-center">
-                        <h2 className="text-3xl font-black mb-10 uppercase tracking-tighter italic">CHOISIR LA ZONE</h2>
-                        <div className="grid grid-cols-1 gap-6">
-                            <button onClick={() => { setCountry('france'); setStep('map'); }} className="glass p-12 rounded-[2.5rem] hover:bg-indigo-600 transition-all group border border-white/5">
-                                <span className="text-6xl mb-4 block group-hover:scale-110 transition-transform">🇫🇷</span>
-                                <h3 className="font-black uppercase tracking-tighter text-2xl">FRANCE</h3>
+                <div className="h-screen flex items-center justify-center bg-slate-950 p-4 text-center">
+                    <div className="w-full max-w-md">
+                        <h2 className="text-3xl font-black mb-8 uppercase tracking-tighter italic">ZONE DE PROSPECTION</h2>
+                        <div className="grid grid-cols-1 gap-4">
+                            <button onClick={() => { setCountry('france'); setStep('map'); }} className="glass p-12 rounded-3xl hover:bg-indigo-600 transition-all border border-white/5">
+                                <span className="text-5xl mb-2 block">🇫🇷</span>
+                                <h3 className="font-black uppercase tracking-tighter text-xl">FRANCE</h3>
                             </button>
-                            <button onClick={() => { setCountry('belgium'); setStep('map'); }} className="glass p-12 rounded-[2.5rem] hover:bg-indigo-600 transition-all group border border-white/5">
-                                <span className="text-6xl mb-4 block group-hover:scale-110 transition-transform">🇧🇪</span>
-                                <h3 className="font-black uppercase tracking-tighter text-2xl">BELGIQUE</h3>
+                            <button onClick={() => { setCountry('belgium'); setStep('map'); }} className="glass p-12 rounded-3xl hover:bg-indigo-600 transition-all border border-white/5">
+                                <span className="text-5xl mb-2 block">🇧🇪</span>
+                                <h3 className="font-black uppercase tracking-tighter text-xl">BELGIQUE</h3>
                             </button>
                         </div>
                     </div>
@@ -252,45 +232,47 @@
             );
 
             return (
-                <div className="flex flex-col h-screen bg-slate-950 overflow-hidden">
-                    <header className="bg-slate-900 p-3 lg:p-4 border-b border-white/5 shadow-2xl z-[60]">
-                        <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
-                            <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-                                <button onClick={() => { setStep('menu'); setSelectedDept(null); setIsSheetOpen(false); }} className="flex items-center gap-2 text-indigo-400 hover:text-white font-black text-[10px] uppercase">
-                                    <Icon name="arrow-left" /> <span>Retour</span>
+                <div className="app-container">
+                    <header className="bg-slate-900 border-b border-white/5 shadow-2xl p-3 z-50">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => { setStep('menu'); setSelectedDept(null); }} className="bg-slate-800 p-2 rounded-lg flex items-center gap-1 text-[10px] font-black uppercase">
+                                    <Icon name="back" /> <span className="hidden sm:inline">RETOUR</span>
                                 </button>
-                                <h1 className="font-black italic text-lg uppercase tracking-tighter hidden xs:block">EDAYA MAP</h1>
-                                <button onClick={() => { setModalMode('add'); setActiveEntry({ name: '', city: '', dept: '', type: 'Lieu', cat: 'Accessible', address: '' }); }} className="sm:hidden bg-indigo-600 p-2 rounded-lg"><Icon name="plus" /></button>
+                                <h1 className="font-black italic text-lg uppercase tracking-tighter">EDAYA MAP</h1>
                             </div>
-                            <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
-                                <button onClick={() => fileInputRef.current.click()} className="bg-slate-700 px-3 py-2 rounded-lg flex items-center gap-2 text-[9px] font-black hover:bg-slate-600">
-                                    <Icon name="upload" /> <span>IMPORTER</span>
+                            
+                            <div className="header-scroll flex items-center gap-2 flex-1 justify-end">
+                                <button onClick={() => { setModalMode('add'); setActiveEntry({ name: '', city: '', dept: '', type: 'Lieu', cat: 'Accessible', address: '' }); }} className="bg-indigo-600 px-3 py-2 rounded-lg flex items-center gap-2 text-[10px] font-black shadow-lg shadow-indigo-500/20">
+                                    <Icon name="plus" /> <span>AJOUTER</span>
+                                </button>
+                                <button onClick={() => fileInputRef.current.click()} className="bg-slate-700 px-3 py-2 rounded-lg flex items-center gap-2 text-[10px] font-black">
+                                    <Icon name="upload" /> <span className="hidden sm:inline">IMPORTER CSV</span><span className="sm:hidden">IMPORT</span>
                                 </button>
                                 <input type="file" ref={fileInputRef} className="hidden" accept=".csv" onChange={handleImport} />
-                                <button onClick={handleExport} className="bg-emerald-600 px-3 py-2 rounded-lg flex items-center gap-2 text-[9px] font-black hover:bg-emerald-500">
-                                    <Icon name="download" /> <span>EXPORTER</span>
+                                <button onClick={handleExport} className="bg-emerald-600 px-3 py-2 rounded-lg flex items-center gap-2 text-[10px] font-black">
+                                    <Icon name="download" /> <span className="hidden sm:inline">EXPORTER CSV</span><span className="sm:hidden">EXPORT</span>
                                 </button>
                             </div>
                         </div>
                     </header>
 
-                    <div className="app-container flex-grow relative overflow-hidden flex flex-col lg:flex-row">
+                    <div className="app-grid">
                         {/* CARTE */}
-                        <div className="sidebar-map flex flex-col bg-slate-950 w-full lg:w-[500px] flex-shrink-0">
+                        <div className="sidebar-map flex flex-col overflow-hidden">
                             <div className="p-3 bg-slate-900/40 border-b border-white/5">
-                                <div className="grid grid-cols-2 gap-3">
-                                    <select onChange={(e) => { setFilters(p => ({ ...p, type: e.target.value })); setSelectedDept(null); }} className="w-full p-2 bg-slate-800 rounded-xl text-[10px] font-black outline-none border border-white/10 text-white cursor-pointer">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <select onChange={(e) => { setFilters(p => ({ ...p, type: e.target.value })); setSelectedDept(null); }} className="p-2 bg-slate-800 rounded-lg text-[10px] font-black outline-none border border-white/10 text-white">
                                         <option value="All">TOUT TYPE</option><option>Lieu</option><option>Festival</option><option>Booker</option><option>Media Spé</option>
                                     </select>
-                                    <select onChange={(e) => { setFilters(p => ({ ...p, cat: e.target.value })); setSelectedDept(null); }} className="w-full p-2 bg-slate-800 rounded-xl text-[10px] font-black outline-none border border-white/10 text-white cursor-pointer">
+                                    <select onChange={(e) => { setFilters(p => ({ ...p, cat: e.target.value })); setSelectedDept(null); }} className="p-2 bg-slate-800 rounded-lg text-[10px] font-black outline-none border border-white/10 text-white">
                                         <option value="All">STATUT</option><option>Accessible</option><option>Plus tard</option>
                                     </select>
                                 </div>
                             </div>
-                            <div className="map-wrapper" onClick={() => { setSelectedDept(null); setIsSheetOpen(false); }}>
-                                {geoPaths.length === 0 ? <div className="text-[10px] font-black opacity-30 uppercase animate-pulse">Chargement...</div> : (
-                                    <svg viewBox={country === 'france' ? "0 0 600 650" : "0 0 500 450"} className="france-svg" onClick={(e) => e.stopPropagation()}>
-                                        <rect width="100%" height="100%" className="map-bg" onClick={() => { setSelectedDept(null); setIsSheetOpen(false); }} />
+                            <div className="map-wrapper">
+                                {geoPaths.length === 0 ? <div className="animate-pulse font-black text-[10px] opacity-30">Chargement...</div> : (
+                                    <svg viewBox={country === 'france' ? "0 0 600 650" : "0 0 500 450"} className="france-svg">
                                         {geoPaths.map(dept => (
                                             <path key={dept.id} d={renderPath(dept.geometry)} 
                                                 className={`dept-path ${String(selectedDept) === String(dept.id) ? 'selected' : ''} ${deptsWithData.has(String(dept.id)) ? 'has-data' : ''}`}
@@ -301,67 +283,63 @@
                             </div>
                         </div>
 
-                        {/* LISTE OPPORTUNITÉS */}
-                        <div className={`content-list mobile-bottom-sheet ${isSheetOpen ? 'sheet-open' : 'sheet-closed'} lg:sheet-open flex flex-col overflow-hidden bg-slate-950 p-0 lg:p-8`}>
-                            {/* Bouton "Badge" Mobile */}
-                            <div className="sheet-trigger-badge lg:hidden" onClick={() => setIsSheetOpen(!isSheetOpen)}>
-                                <div className="badge-pill shadow-xl">
-                                    <Icon name={isSheetOpen ? 'chevron-down' : 'chevron-up'} />
-                                    <span>{filteredData.length} OPPORTUNITÉS {selectedDept ? `DANS LE ${selectedDept}` : ''}</span>
-                                </div>
+                        {/* LISTE - Occupant tout l'espace sur PC */}
+                        <div className={`content-scroll mobile-bottom-sheet ${isSheetOpen ? 'sheet-open' : 'sheet-closed'} lg:translate-y-0 flex flex-col overflow-hidden bg-slate-950 border-t lg:border-t-0 border-white/5`}>
+                            <div className="p-3 flex items-center justify-center lg:hidden" onClick={() => setIsSheetOpen(!isSheetOpen)}>
+                                <div className="w-10 h-1 bg-slate-700 rounded-full"></div>
                             </div>
-
-                            <div className="flex-grow flex flex-col overflow-hidden bg-slate-950 p-4 lg:p-0">
-                                <div className="flex justify-between items-end mb-4 lg:border-b-4 lg:border-indigo-600 pb-2">
+                            
+                            <div className="p-4 lg:p-8 flex-grow overflow-y-auto custom-scrollbar">
+                                <div className="flex justify-between items-end mb-6 border-b-2 border-indigo-600 pb-2">
                                     <h2 className="text-xl lg:text-4xl font-black uppercase italic tracking-tighter">
-                                        {selectedDept ? `Zone ${selectedDept}` : "Global"}
+                                        {selectedDept ? `Zone ${selectedDept}` : "Opportunités"}
                                     </h2>
-                                    {selectedDept && <button onClick={() => setSelectedDept(null)} className="text-[10px] bg-white/10 px-2 py-1 rounded-lg font-black uppercase">Voir tout</button>}
+                                    {selectedDept && <button onClick={() => setSelectedDept(null)} className="text-[10px] bg-white/10 px-2 py-1 rounded font-black uppercase tracking-widest hover:bg-white/20">Voir tout</button>}
                                 </div>
-
-                                <div className="flex-grow overflow-y-auto custom-scrollbar space-y-4 pb-20">
+                                
+                                <div className="grid grid-cols-1 gap-3 w-full">
                                     {filteredData.length > 0 ? filteredData.map(item => (
-                                        <div key={item.fbKey} className="glass p-5 rounded-[2rem] animate-in border border-white/5 hover:border-indigo-500/40 transition-all shadow-xl">
+                                        <div key={item.fbKey} className="glass p-5 rounded-3xl border border-white/5 hover:border-indigo-500/30 transition-all w-full">
                                             <div className="flex justify-between items-start">
                                                 <div className="flex-1 min-w-0 pr-4">
-                                                    <h4 className="font-black uppercase truncate text-base lg:text-2xl">{item.name}</h4>
-                                                    <div className="flex flex-wrap gap-2 mt-2">
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase bg-white/5 px-2 py-1 rounded-lg">{item.city} ({item.dept})</span>
-                                                        <span className="text-[9px] font-black px-2 py-1 bg-indigo-500/20 text-indigo-400 rounded-lg border border-indigo-500/30 uppercase">{item.type}</span>
+                                                    <h4 className="font-black uppercase truncate text-sm lg:text-lg">{item.name}</h4>
+                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase bg-white/5 px-2 py-0.5 rounded-md">{item.city} ({item.dept})</span>
+                                                        <span className="text-[9px] font-black px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded-md border border-indigo-500/30 uppercase">{item.type}</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <button onClick={() => { setModalMode('edit'); setActiveEntry(item); }} className="p-2 text-indigo-400"><Icon name="edit" /></button>
-                                                    <button onClick={() => deleteEntry(item.fbKey)} className="p-2 text-red-500/70 hover:text-red-500"><Icon name="trash" /></button>
+                                                    <button onClick={() => { setModalMode('edit'); setActiveEntry(item); }} className="p-2 text-indigo-400 hover:bg-white/5 rounded-lg"><Icon name="edit" /></button>
+                                                    <button onClick={() => deleteEntry(item.fbKey)} className="p-2 text-red-500/70 hover:bg-red-500/10 rounded-lg"><Icon name="trash" /></button>
                                                 </div>
                                             </div>
-                                            <p className="text-[10px] lg:text-sm text-slate-400 mt-4 italic line-clamp-2">{item.address || "..."}</p>
+                                            <p className="text-[10px] lg:text-xs text-slate-400 mt-2 italic">{item.address || "..."}</p>
                                         </div>
-                                    )) : <div className="text-center py-24 opacity-20 text-[10px] font-black uppercase italic">Aucun résultat</div>}
+                                    )) : <div className="text-center py-20 opacity-20 font-black text-[10px] uppercase">Aucun résultat</div>}
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {modalMode && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md overflow-y-auto">
-                            <div className="glass w-full max-w-lg rounded-[3rem] overflow-hidden animate-in shadow-2xl">
-                                <div className="bg-slate-900 p-6 flex justify-between items-center border-b border-white/10">
-                                    <h3 className="font-black uppercase text-sm italic">{modalMode === 'add' ? 'Ajouter' : 'Modifier'}</h3>
+                        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+                            <div className="glass w-full max-w-md rounded-[2.5rem] overflow-hidden">
+                                <div className="bg-slate-900 p-6 flex justify-between items-center border-b border-white/5">
+                                    <h3 className="font-black uppercase text-sm italic tracking-tighter">{modalMode === 'add' ? 'Ajouter' : 'Modifier'}</h3>
                                     <button onClick={() => setModalMode(null)} className="p-2"><Icon name="x" /></button>
                                 </div>
-                                <form onSubmit={saveEntry} className="p-8 space-y-4">
-                                    <input required placeholder="Nom structure" className="w-full p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold text-sm outline-none focus:border-indigo-500 transition-all shadow-inner" value={activeEntry.name} onChange={e => setActiveEntry({...activeEntry, name: e.target.value})} />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input required placeholder="Ville" className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold text-sm outline-none focus:border-indigo-500 shadow-inner" value={activeEntry.city} onChange={e => setActiveEntry({...activeEntry, city: e.target.value})} />
-                                        <input required placeholder="Zone" className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold text-sm outline-none focus:border-indigo-500 shadow-inner" value={activeEntry.dept} onChange={e => setActiveEntry({...activeEntry, dept: e.target.value})} />
+                                <form onSubmit={saveEntry} className="p-6 space-y-3">
+                                    <input required placeholder="Nom structure" className="w-full p-4 bg-slate-900 text-white rounded-xl border border-white/10 font-bold text-xs outline-none" value={activeEntry.name} onChange={e => setActiveEntry({...activeEntry, name: e.target.value})} />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input required placeholder="Ville" className="w-full p-4 bg-slate-900 text-white rounded-xl border border-white/10 font-bold text-xs outline-none" value={activeEntry.city} onChange={e => setActiveEntry({...activeEntry, city: e.target.value})} />
+                                        <input required placeholder="Zone" className="w-full p-4 bg-slate-900 text-white rounded-xl border border-white/10 font-bold text-xs outline-none" value={activeEntry.dept} onChange={e => setActiveEntry({...activeEntry, dept: e.target.value})} />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <select className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 text-[11px] font-black outline-none" value={activeEntry.type} onChange={e => setActiveEntry({...activeEntry, type: e.target.value})}><option>Lieu</option><option>Festival</option><option>Booker</option><option>Media Spé</option></select>
-                                        <select className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 text-[11px] font-black outline-none" value={activeEntry.cat} onChange={e => setActiveEntry({...activeEntry, cat: e.target.value})}><option>Accessible</option><option>Plus tard</option></select>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <select className="p-4 bg-slate-900 text-white rounded-xl border border-white/10 text-[10px] font-black" value={activeEntry.type} onChange={e => setActiveEntry({...activeEntry, type: e.target.value})}><option>Lieu</option><option>Festival</option><option>Booker</option><option>Media Spé</option></select>
+                                        <select className="p-4 bg-slate-900 text-white rounded-xl border border-white/10 text-[10px] font-black" value={activeEntry.cat} onChange={e => setActiveEntry({...activeEntry, cat: e.target.value})}><option>Accessible</option><option>Plus tard</option></select>
                                     </div>
-                                    <textarea placeholder="Notes / Adresse" className="w-full p-5 bg-slate-900 text-white rounded-3xl border border-white/10 font-bold text-sm outline-none focus:border-indigo-500 shadow-inner" rows="3" value={activeEntry.address} onChange={e => setActiveEntry({...activeEntry, address: e.target.value})} />
-                                    <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-xl hover:bg-indigo-500 transition-all">Enregistrer</button>
+                                    <textarea placeholder="Notes / Adresse" className="w-full p-4 bg-slate-900 text-white rounded-xl border border-white/10 font-bold text-xs outline-none" rows="3" value={activeEntry.address} onChange={e => setActiveEntry({...activeEntry, address: e.target.value})} />
+                                    <button type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg">Enregistrer</button>
                                 </form>
                             </div>
                         </div>
