@@ -114,13 +114,16 @@
                 return polys.map(poly => `M ${poly[0].map(c => project(c).join(",")).join(" L ")} Z`).join(" ");
             };
 
+            // LOGIQUE DE FILTRAGE + TRI ALPHABÉTIQUE (AJOUTÉ)
             const filteredData = useMemo(() => {
-                return localData.filter(i => {
-                    const t = filters.type === 'All' || i.type === filters.type;
-                    const c = filters.cat === 'All' || i.cat === filters.cat;
-                    const d = !selectedDept || String(i.dept) === String(selectedDept);
-                    return t && c && d;
-                });
+                return localData
+                    .filter(i => {
+                        const t = filters.type === 'All' || i.type === filters.type;
+                        const c = filters.cat === 'All' || i.cat === filters.cat;
+                        const d = !selectedDept || String(i.dept) === String(selectedDept);
+                        return t && c && d;
+                    })
+                    .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
             }, [localData, filters, selectedDept]);
 
             const deptsWithData = useMemo(() => {
@@ -322,7 +325,7 @@
                                         <input required placeholder="Zone" className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold outline-none" value={activeEntry.dept} onChange={e => setActiveEntry({...activeEntry, dept: e.target.value})} />
                                     </div>
                                     <textarea placeholder="Notes / Adresse" className="w-full p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold outline-none" value={activeEntry.address} onChange={e => setActiveEntry({...activeEntry, address: e.target.value})} />
-                                    <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-xl">Sauvegarder</button>
+                                    <button type="submit" className="w-full py-5 bg-indigo-600 rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-xl">Sauvegarder</button>
                                 </form>
                             </div>
                         </div>
