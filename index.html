@@ -16,30 +16,29 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; }
         
-        /* Ajustements Carte */
         .dept-path { fill: #1e293b; stroke: #334155; stroke-width: 0.6; transition: all 0.2s; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .dept-path:hover { fill: #334155; }
         .dept-path.has-data { fill: #1e1b4b; stroke: #6366f1; stroke-width: 0.8; }
         .dept-path.selected { fill: #4338ca; stroke: #ffffff; stroke-width: 1.5; }
         
-        /* Layout Adaptatif */
-        .main-layout { 
-            display: flex; 
-            flex-direction: column; 
-            height: calc(100vh - 70px); 
-        }
+        .main-layout { display: flex; flex-direction: column; height: calc(100vh - 80px); }
         @media (min-width: 1024px) {
             .main-layout { flex-direction: row; }
-            .sidebar { width: 500px; border-right: 1px solid rgba(255,255,255,0.05); }
+            .sidebar { width: 480px; border-right: 1px solid rgba(255,255,255,0.05); }
             .content-area { flex: 1; }
         }
 
-        .map-container { flex-shrink: 0; background: rgba(15, 23, 42, 0.4); }
-        .france-svg { width: 100%; height: auto; max-height: 40vh; display: block; margin: auto; }
-        @media (min-width: 1024px) {
-            .france-svg { max-height: 70vh; }
+        .map-container { 
+            height: 320px; 
+            flex-shrink: 0; 
+            background: rgba(15, 23, 42, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+        @media (min-width: 1024px) { .map-container { height: 100%; } }
 
+        .france-svg { width: 100%; height: 100%; max-height: 100%; display: block; margin: auto; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
@@ -67,11 +66,12 @@
         const db = firebase.database();
 
         const Icon = ({ name }) => {
-            if (name === 'plus') return <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
-            if (name === 'edit') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>;
-            if (name === 'trash') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
-            if (name === 'upload') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>;
-            if (name === 'x') return <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+            if (name === 'plus') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+            if (name === 'edit') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>;
+            if (name === 'trash') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
+            if (name === 'upload') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>;
+            if (name === 'download') return <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
+            if (name === 'x') return <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
             return null;
         };
 
@@ -109,12 +109,10 @@
                 const url = country === 'france' 
                     ? 'https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements-version-simplifiee.geojson'
                     : 'https://raw.githubusercontent.com/codeforgermany/click_that_hood/master/public/data/belgium.geojson';
-                
                 fetch(url).then(res => res.json()).then(data => {
                     setGeoPaths(data.features.map(f => ({ 
                         id: country === 'france' ? f.properties.code : f.properties.name, 
-                        name: f.properties.nom || f.properties.name, 
-                        geometry: f.geometry 
+                        name: f.properties.nom || f.properties.name, geometry: f.geometry 
                     })));
                 });
             }, [step, country]);
@@ -159,53 +157,46 @@
                     const lines = content.split(/\r?\n/).filter(l => l.trim());
                     const sep = content.includes(';') ? ';' : ',';
                     const existingNames = new Set(localData.map(item => item.name.trim().toLowerCase()));
-
-                    const allDataInFile = lines.slice(1).map(line => {
+                    const allData = lines.slice(1).map(line => {
                         const parts = line.split(new RegExp(`${sep}(?=(?:(?:[^"]*"){2})*[^"]*$)`)).map(p => p.replace(/^"|"$/g, '').trim());
-                        return { 
-                            name: parts[1] || "", city: parts[2] || "", dept: String(parts[3] || "").replace(/^0(?=\d)/, ''), 
-                            type: parts[4] || "", cat: parts[5] || "", url: parts[6] || "", 
-                            email: parts[7] || "", address: parts[8] || "" 
-                        };
+                        return { name: parts[1] || "", city: parts[2] || "", dept: String(parts[3] || "").replace(/^0(?=\d)/, ''), type: parts[4] || "", cat: parts[5] || "", url: parts[6] || "", email: parts[7] || "", address: parts[8] || "" };
                     }).filter(i => i.name);
-
-                    const finalDataToImport = allDataInFile.filter(item => !existingNames.has(item.name.trim().toLowerCase()));
-                    if (finalDataToImport.length === 0) { alert("Aucune nouvelle donnée."); return; }
-
-                    if(confirm(`Importer ${finalDataToImport.length} lignes ?`)) {
+                    const finalData = allData.filter(item => !existingNames.has(item.name.trim().toLowerCase()));
+                    if (finalData.length === 0) { alert("Pas de nouveautés."); return; }
+                    if(confirm(`Importer ${finalData.length} fiches ?`)) {
                         try {
-                            const promises = finalDataToImport.map(item => db.ref(`opportunities_${country}`).push({ ...item, id: Date.now() + Math.random() }));
-                            await Promise.all(promises);
-                            alert("Réussi !");
+                            const promises = finalData.map(item => db.ref(`opportunities_${country}`).push({ ...item, id: Date.now() + Math.random() }));
+                            await Promise.all(promises); alert("Ok !");
                         } catch (err) { alert(err.message); }
                     }
                 };
                 reader.readAsText(file);
             };
 
-            const deleteEntry = (fbKey) => {
-                if (window.confirm("Supprimer ?")) {
-                    db.ref(`opportunities_${country}/${fbKey}`).remove();
-                }
+            const handleExport = () => {
+                const headers = ["ID", "Nom", "Ville", "Département", "Type", "Catégorie", "URL", "Email", "Adresse"];
+                const rows = localData.map(i => [i.id, `"${i.name}"`, `"${i.city}"`, i.dept, i.type, i.cat, `"${i.url}"`, `"${i.email}"`, `"${i.address}"`]);
+                const csvContent = "\uFEFF" + headers.join(";") + "\n" + rows.map(e => e.join(";")).join("\n");
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob); link.download = `edaya_${country}.csv`; link.click();
             };
+
+            const deleteEntry = (fbKey) => { if (confirm("Supprimer ?")) db.ref(`opportunities_${country}/${fbKey}`).remove(); };
 
             const saveEntry = (e) => {
                 e.preventDefault();
-                const path = `opportunities_${country}`;
-                if (modalMode === 'add') db.ref(path).push({ ...activeEntry, id: Date.now() });
-                else {
-                    const { fbKey, ...updates } = activeEntry;
-                    db.ref(`${path}/${fbKey}`).set(updates);
-                }
+                if (modalMode === 'add') db.ref(`opportunities_${country}`).push({ ...activeEntry, id: Date.now() });
+                else db.ref(`opportunities_${country}/${activeEntry.fbKey}`).set(activeEntry);
                 setModalMode(null);
             };
 
             if (step === 'login') return (
                 <div className="h-screen flex items-center justify-center bg-slate-950 p-4">
                     <form onSubmit={handleLogin} className="glass p-8 rounded-[2rem] w-full max-w-sm text-center">
-                        <h1 className="text-2xl font-black italic mb-6 tracking-tighter">EDAYA MAP ACCESS</h1>
-                        <input type="password" placeholder="Mot de passe" className="w-full p-4 bg-slate-900/50 rounded-xl border border-white/10 mb-4 outline-none text-center" value={pass} onChange={e => setPass(e.target.value)} />
-                        <button type="submit" className="w-full py-4 bg-indigo-600 rounded-xl font-black uppercase tracking-widest text-sm">Entrer</button>
+                        <h1 className="text-2xl font-black italic mb-6 tracking-tighter uppercase">EDAYA MAP ACCESS</h1>
+                        <input type="password" placeholder="Mot de passe" className="w-full p-4 bg-slate-900/50 rounded-xl border border-white/10 mb-4 outline-none text-center font-bold text-white" value={pass} onChange={e => setPass(e.target.value)} />
+                        <button type="submit" className="w-full py-4 bg-indigo-600 rounded-xl font-black uppercase tracking-widest text-sm shadow-xl">Entrer</button>
                     </form>
                 </div>
             );
@@ -213,15 +204,15 @@
             if (step === 'menu') return (
                 <div className="h-screen flex items-center justify-center bg-slate-950 p-4">
                     <div className="w-full max-w-md text-center">
-                        <h2 className="text-3xl font-black mb-8 uppercase tracking-tighter">ZONE</h2>
+                        <h2 className="text-3xl font-black mb-8 uppercase tracking-tighter">CHOISIR ZONE</h2>
                         <div className="grid grid-cols-1 gap-4">
-                            <button onClick={() => { setCountry('france'); setStep('map'); }} className="glass p-10 rounded-3xl hover:bg-indigo-600 transition-all">
-                                <span className="text-4xl mb-2 block">🇫🇷</span>
-                                <h3 className="font-black uppercase">FRANCE</h3>
+                            <button onClick={() => { setCountry('france'); setStep('map'); }} className="glass p-10 rounded-3xl hover:bg-indigo-600 transition-all group">
+                                <span className="text-4xl mb-2 block group-hover:scale-110 transition-transform">🇫🇷</span>
+                                <h3 className="font-black uppercase tracking-tighter">FRANCE</h3>
                             </button>
-                            <button onClick={() => { setCountry('belgium'); setStep('map'); }} className="glass p-10 rounded-3xl hover:bg-indigo-600 transition-all">
-                                <span className="text-4xl mb-2 block">🇧🇪</span>
-                                <h3 className="font-black uppercase">BELGIQUE</h3>
+                            <button onClick={() => { setCountry('belgium'); setStep('map'); }} className="glass p-10 rounded-3xl hover:bg-indigo-600 transition-all group">
+                                <span className="text-4xl mb-2 block group-hover:scale-110 transition-transform">🇧🇪</span>
+                                <h3 className="font-black uppercase tracking-tighter">BELGIQUE</h3>
                             </button>
                         </div>
                     </div>
@@ -230,85 +221,99 @@
 
             return (
                 <div className="flex flex-col h-screen overflow-hidden">
-                    <header className="bg-slate-900 p-4 flex flex-wrap justify-between items-center gap-2 shadow-lg border-b border-white/5">
-                        <div className="flex items-center gap-3">
-                            <button onClick={() => { setStep('menu'); setSelectedDept(null); }} className="text-slate-400"><Icon name="x" /></button>
-                            <h1 className="font-black italic text-lg uppercase tracking-tighter">EDAYA MAP</h1>
+                    <header className="bg-slate-900 p-3 lg:p-4 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-lg border-b border-white/5">
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <button onClick={() => { setStep('menu'); setSelectedDept(null); }} className="text-slate-400 hover:text-white"><Icon name="x" /></button>
+                            <h1 className="font-black italic text-lg lg:text-xl uppercase tracking-tighter">EDAYA MAP</h1>
                         </div>
-                        <div className="flex gap-2">
-                            <button onClick={() => { setModalMode('add'); setActiveEntry({ name: '', city: '', dept: '', type: 'Lieu', cat: 'Accessible', address: '' }); }} className="bg-indigo-600 p-2 rounded-lg"><Icon name="plus" /></button>
-                            <button onClick={() => fileInputRef.current.click()} className="bg-slate-700 p-2 rounded-lg"><Icon name="upload" /></button>
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end overflow-x-auto no-scrollbar">
+                            <button onClick={() => { setModalMode('add'); setActiveEntry({ name: '', city: '', dept: '', type: 'Lieu', cat: 'Accessible', address: '' }); }} className="bg-indigo-600 px-3 py-2 rounded-lg flex items-center gap-2 text-[9px] lg:text-xs font-black shadow-lg shadow-indigo-500/20 flex-shrink-0">
+                                <Icon name="plus" /> <span className="hidden xs:inline">AJOUTER</span>
+                            </button>
+                            <button onClick={() => fileInputRef.current.click()} className="bg-slate-700 px-3 py-2 rounded-lg flex items-center gap-2 text-[9px] lg:text-xs font-black flex-shrink-0">
+                                <Icon name="upload" /> <span>IMPORTER CSV</span>
+                            </button>
                             <input type="file" ref={fileInputRef} className="hidden" accept=".csv" onChange={handleImport} />
+                            <button onClick={handleExport} className="bg-emerald-600 px-3 py-2 rounded-lg flex items-center gap-2 text-[9px] lg:text-xs font-black flex-shrink-0">
+                                <Icon name="download" /> <span>EXPORTER CSV</span>
+                            </button>
                         </div>
                     </header>
 
                     <div className="main-layout flex-grow overflow-hidden">
-                        {/* SIDEBAR / CARTE */}
-                        <div className="sidebar map-container flex flex-col p-2 lg:p-6 overflow-hidden">
-                            <div className="mb-4">
+                        <div className="sidebar flex flex-col overflow-hidden">
+                            <div className="p-3 bg-slate-900/40">
                                 <div className="grid grid-cols-2 gap-2">
-                                    <select onChange={(e) => { setFilters(p => ({ ...p, type: e.target.value })); setSelectedDept(null); }} className="w-full p-2 bg-slate-800 rounded-lg text-[10px] font-black outline-none border border-white/10">
+                                    <select onChange={(e) => { setFilters(p => ({ ...p, type: e.target.value })); setSelectedDept(null); }} className="w-full p-2 bg-slate-800 rounded-lg text-[10px] font-black outline-none border border-white/10 text-white cursor-pointer">
                                         <option value="All">TOUT TYPE</option><option>Lieu</option><option>Festival</option><option>Booker</option><option>Media Spé</option>
                                     </select>
-                                    <select onChange={(e) => { setFilters(p => ({ ...p, cat: e.target.value })); setSelectedDept(null); }} className="w-full p-2 bg-slate-800 rounded-lg text-[10px] font-black outline-none border border-white/10">
+                                    <select onChange={(e) => { setFilters(p => ({ ...p, cat: e.target.value })); setSelectedDept(null); }} className="w-full p-2 bg-slate-800 rounded-lg text-[10px] font-black outline-none border border-white/10 text-white cursor-pointer">
                                         <option value="All">STATUT</option><option>Accessible</option><option>Plus tard</option>
                                     </select>
                                 </div>
                             </div>
-                            <div className="flex-grow flex items-center justify-center">
-                                <svg viewBox={country === 'france' ? "0 0 600 650" : "0 0 500 450"} className="france-svg">
-                                    {geoPaths.map(dept => (
-                                        <path key={dept.id} d={renderPath(dept.geometry)} 
-                                            className={`dept-path ${String(selectedDept) === String(dept.id) ? 'selected' : ''} ${deptsWithData.has(String(dept.id)) ? 'has-data' : ''}`}
-                                            onClick={() => setSelectedDept(selectedDept === dept.id ? null : dept.id)} />
-                                    ))}
-                                </svg>
+                            <div className="map-container relative">
+                                {geoPaths.length === 0 ? <div className="text-[10px] font-black opacity-30 uppercase animate-pulse">Chargement carte...</div> : (
+                                    <svg viewBox={country === 'france' ? "0 0 600 650" : "0 0 500 450"} className="france-svg">
+                                        {geoPaths.map(dept => (
+                                            <path key={dept.id} d={renderPath(dept.geometry)} 
+                                                className={`dept-path ${String(selectedDept) === String(dept.id) ? 'selected' : ''} ${deptsWithData.has(String(dept.id)) ? 'has-data' : ''}`}
+                                                onClick={() => setSelectedDept(selectedDept === dept.id ? null : dept.id)} />
+                                        ))}
+                                    </svg>
+                                )}
                             </div>
                         </div>
 
-                        {/* CONTENT / LISTE */}
-                        <div className="content-area flex flex-col overflow-hidden bg-slate-950 p-4 lg:p-10">
-                            <h2 className="text-2xl lg:text-5xl font-black uppercase italic mb-6 border-b-2 border-indigo-600 pb-2">
-                                {selectedDept ? `${selectedDept}` : "Opportunités"}
-                            </h2>
-                            <div className="flex-grow overflow-y-auto custom-scrollbar space-y-3 pb-20">
+                        <div className="content-area flex flex-col overflow-hidden bg-slate-950 p-4 lg:p-8 border-t lg:border-t-0 border-white/5">
+                            <div className="flex justify-between items-end mb-4 lg:mb-6">
+                                <h2 className="text-xl lg:text-4xl font-black uppercase italic border-b-2 border-indigo-600 pb-1 lg:pb-2">
+                                    {selectedDept ? `Zone ${selectedDept}` : "Opportunités"}
+                                </h2>
+                                {selectedDept && <button onClick={() => setSelectedDept(null)} className="text-[8px] lg:text-[10px] bg-white/10 px-2 py-1 rounded font-black uppercase tracking-widest">Voir tout</button>}
+                            </div>
+                            <div className="flex-grow overflow-y-auto custom-scrollbar space-y-3 pb-8">
                                 {filteredData.length > 0 ? filteredData.map(item => (
-                                    <div key={item.fbKey} className="glass p-4 rounded-2xl animate-in">
+                                    <div key={item.fbKey} className="glass p-4 rounded-2xl animate-in border border-white/5 hover:border-indigo-500/30 transition-all">
                                         <div className="flex justify-between items-start">
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="font-black uppercase truncate text-sm lg:text-xl">{item.name}</h4>
+                                            <div className="flex-1 min-w-0 pr-2">
+                                                <h4 className="font-black uppercase truncate text-sm lg:text-lg">{item.name}</h4>
                                                 <div className="flex flex-wrap gap-2 mt-1">
                                                     <span className="text-[8px] lg:text-[10px] font-bold text-slate-400 uppercase bg-white/5 px-2 py-0.5 rounded-md">{item.city} ({item.dept})</span>
                                                     <span className="text-[8px] lg:text-[10px] font-black px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded-md uppercase border border-indigo-500/30">{item.type}</span>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-1">
-                                                <button onClick={() => { setModalMode('edit'); setActiveEntry(item); }} className="p-2 text-indigo-400"><Icon name="edit" /></button>
-                                                <button onClick={() => deleteEntry(item.fbKey)} className="p-2 text-red-400"><Icon name="trash" /></button>
+                                            <div className="flex gap-1 flex-shrink-0">
+                                                <button onClick={() => { setModalMode('edit'); setActiveEntry(item); }} className="p-1.5 text-indigo-400 hover:bg-white/10 rounded-lg"><Icon name="edit" /></button>
+                                                <button onClick={() => deleteEntry(item.fbKey)} className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-lg"><Icon name="trash" /></button>
                                             </div>
                                         </div>
-                                        <p className="text-[10px] lg:text-xs text-slate-400 mt-2 italic line-clamp-2">{item.address}</p>
+                                        <p className="text-[9px] lg:text-xs text-slate-400 mt-2 italic line-clamp-2">{item.address || "..."}</p>
                                     </div>
-                                )) : <div className="text-center py-10 opacity-30 text-xs">AUCUNE DONNÉE</div>}
+                                )) : <div className="text-center py-20 opacity-20 text-[10px] font-black uppercase tracking-widest italic">Aucun résultat</div>}
                             </div>
                         </div>
                     </div>
 
                     {modalMode && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                            <div className="glass w-full max-w-md rounded-[2rem] overflow-hidden">
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+                            <div className="glass w-full max-w-md rounded-[2rem] overflow-hidden animate-in">
                                 <div className="bg-slate-900 p-6 flex justify-between items-center border-b border-white/5">
                                     <h3 className="font-black uppercase text-sm italic">{modalMode === 'add' ? 'Ajouter' : 'Modifier'}</h3>
-                                    <button onClick={() => setModalMode(null)}><Icon name="x" /></button>
+                                    <button onClick={() => setModalMode(null)} className="p-2"><Icon name="x" /></button>
                                 </div>
                                 <form onSubmit={saveEntry} className="p-6 space-y-3">
-                                    <input required placeholder="Nom structure" className="w-full p-3 bg-slate-900 rounded-xl border border-white/10 font-bold text-xs" value={activeEntry.name} onChange={e => setActiveEntry({...activeEntry, name: e.target.value})} />
+                                    <input required placeholder="Nom structure" className="w-full p-3.5 bg-slate-900 text-white rounded-xl border border-white/10 font-bold text-xs outline-none" value={activeEntry.name} onChange={e => setActiveEntry({...activeEntry, name: e.target.value})} />
                                     <div className="grid grid-cols-2 gap-3">
-                                        <input required placeholder="Ville" className="p-3 bg-slate-900 rounded-xl border border-white/10 font-bold text-xs" value={activeEntry.city} onChange={e => setActiveEntry({...activeEntry, city: e.target.value})} />
-                                        <input required placeholder="Zone" className="p-3 bg-slate-900 rounded-xl border border-white/10 font-bold text-xs" value={activeEntry.dept} onChange={e => setActiveEntry({...activeEntry, dept: e.target.value})} />
+                                        <input required placeholder="Ville" className="w-full p-3.5 bg-slate-900 text-white rounded-xl border border-white/10 font-bold text-xs outline-none" value={activeEntry.city} onChange={e => setActiveEntry({...activeEntry, city: e.target.value})} />
+                                        <input required placeholder="Zone" className="w-full p-3.5 bg-slate-900 text-white rounded-xl border border-white/10 font-bold text-xs outline-none" value={activeEntry.dept} onChange={e => setActiveEntry({...activeEntry, dept: e.target.value})} />
                                     </div>
-                                    <textarea placeholder="Notes" className="w-full p-3 bg-slate-900 rounded-xl border border-white/10 font-bold text-xs" rows="2" value={activeEntry.address} onChange={e => setActiveEntry({...activeEntry, address: e.target.value})} />
-                                    <button type="submit" className="w-full py-4 bg-indigo-600 rounded-xl font-black uppercase tracking-widest text-[10px]">Sauvegarder</button>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <select className="p-3.5 bg-slate-900 text-white rounded-xl border border-white/10 text-[10px] font-black" value={activeEntry.type} onChange={e => setActiveEntry({...activeEntry, type: e.target.value})}><option>Lieu</option><option>Festival</option><option>Booker</option><option>Media Spé</option></select>
+                                        <select className="p-3.5 bg-slate-900 text-white rounded-xl border border-white/10 text-[10px] font-black" value={activeEntry.cat} onChange={e => setActiveEntry({...activeEntry, cat: e.target.value})}><option>Accessible</option><option>Plus tard</option></select>
+                                    </div>
+                                    <textarea placeholder="Notes / Adresse" className="w-full p-3.5 bg-slate-900 text-white rounded-xl border border-white/10 font-bold text-xs outline-none" rows="2" value={activeEntry.address} onChange={e => setActiveEntry({...activeEntry, address: e.target.value})} />
+                                    <button type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg">Enregistrer</button>
                                 </form>
                             </div>
                         </div>
