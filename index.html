@@ -95,12 +95,11 @@
                     : 'https://raw.githubusercontent.com/codeforgermany/click_that_hood/master/public/data/belgium.geojson';
                 
                 fetch(url).then(res => res.json()).then(data => {
-                    const paths = data.features.map(f => ({ 
+                    setGeoPaths(data.features.map(f => ({ 
                         id: country === 'france' ? f.properties.code : f.properties.name, 
                         name: f.properties.nom || f.properties.name, 
                         geometry: f.geometry 
-                    }));
-                    setGeoPaths(paths);
+                    })));
                 });
             }, [step, country]);
 
@@ -114,16 +113,26 @@
                 return polys.map(poly => `M ${poly[0].map(c => project(c).join(",")).join(" L ")} Z`).join(" ");
             };
 
-            const saveEntry = (e) => {
-                e.preventDefault();
-                const path = `opportunities_${country}`;
-                if (modalMode === 'add') db.ref(path).push({ ...activeEntry, id: Date.now() });
-                else {
-                    const { fbKey, ...updates } = activeEntry;
-                    db.ref(`${path}/${fbKey}`).set(updates);
-                }
-                setModalMode(null);
-            };
+            // FILTRAGE LISTE (Synchronisé avec Map + Filtres)
+            const filteredData = useMemo(() => {
+                return localData.filter(i => {
+                    const t = filters.type === 'All' || i.type === filters.type;
+                    const c = filters.cat === 'All' || i.cat === filters.cat;
+                    const d = !selectedDept || String(i.dept) === String(selectedDept);
+                    return t && c && d;
+                });
+            }, [localData, filters, selectedDept]);
+
+            // DÉPARTEMENTS ACTIFS (Seulement ceux qui matchent les filtres Type/Cat)
+            const deptsWithData = useMemo(() => {
+                const visibleSet = new Set();
+                localData.forEach(i => {
+                    const t = filters.type === 'All' || i.type === filters.type;
+                    const c = filters.cat === 'All' || i.cat === filters.cat;
+                    if (t && c) visibleSet.add(String(i.dept));
+                });
+                return visibleSet;
+            }, [localData, filters]);
 
             const handleImport = (e) => {
                 const file = e.target.files[0];
@@ -136,20 +145,19 @@
                     const newData = lines.slice(1).map(line => {
                         const parts = line.split(new RegExp(`${sep}(?=(?:(?:[^"]*"){2})*[^"]*$)`)).map(p => p.replace(/^"|"$/g, '').trim());
                         return { 
-                            name: parts[1] || "", city: parts[2] || "", dept: String(parts[3] || "").padStart(2, '0').replace(/^0(\d{2})$/, '$1'), 
+                            name: parts[1] || "", city: parts[2] || "", 
+                            dept: String(parts[3] || "").replace(/^0(?=\d)/, ''), // Nettoyage "07" -> "7"
                             type: parts[4] || "", cat: parts[5] || "", url: parts[6] || "", 
                             email: parts[7] || "", address: parts[8] || "" 
                         };
                     }).filter(i => i.name);
 
-                    if(confirm(`Importer ${newData.length} lignes dans la zone ${country.toUpperCase()} ?`)) {
+                    if(confirm(`Importer ${newData.length} lignes ?`)) {
                         try {
                             const promises = newData.map(item => db.ref(`opportunities_${country}`).push({ ...item, id: Date.now() + Math.random() }));
                             await Promise.all(promises);
-                            alert("Importation réussie et synchronisée !");
-                        } catch (err) {
-                            alert("ERREUR FIREBASE : Vérifie tes règles de base de données (read/write: true). " + err.message);
-                        }
+                            alert("Importation réussie !");
+                        } catch (err) { alert("Erreur : " + err.message); }
                     }
                 };
                 reader.readAsText(file);
@@ -165,15 +173,6 @@
                 link.download = `edaya_${country}_export.csv`;
                 link.click();
             };
-
-            const filteredData = useMemo(() => {
-                return localData.filter(i => {
-                    const t = filters.type === 'All' || i.type === filters.type;
-                    const c = filters.cat === 'All' || i.cat === filters.cat;
-                    const d = !selectedDept || String(i.dept) === String(selectedDept);
-                    return t && c && d;
-                });
-            }, [localData, filters, selectedDept]);
 
             if (step === 'login') return (
                 <div className="h-screen flex items-center justify-center bg-slate-950 p-6">
@@ -207,11 +206,11 @@
                 <div className="flex flex-col h-screen overflow-hidden" onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}>
                     <header className="bg-slate-900 text-white p-5 flex justify-between items-center shadow-xl z-50">
                         <div className="flex items-center gap-4">
-                            <button onClick={() => setStep('menu')} className="text-slate-400 hover:text-white transition-colors"><Icon name="x" /></button>
+                            <button onClick={() => { setStep('menu'); setSelectedDept(null); }} className="text-slate-400 hover:text-white transition-colors"><Icon name="x" /></button>
                             <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">EDAYA MAP</h1>
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => { setModalMode('add'); setActiveEntry({ name: '', city: '', dept: '', type: 'Lieu', cat: 'Accessible', url: '', email: '', address: '' }); }} className="bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/20">
+                            <button onClick={() => { setModalMode('add'); setActiveEntry({ name: '', city: '', dept: '', type: 'Lieu', cat: 'Accessible', url: '', email: '', address: '' }); }} className="bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-all">
                                 <Icon name="plus" /> AJOUTER
                             </button>
                             <button onClick={() => fileInputRef.current.click()} className="bg-slate-700 hover:bg-slate-600 px-4 py-2.5 rounded-xl text-[10px] font-black flex items-center gap-2 transition-all">
@@ -228,19 +227,26 @@
                         <aside className="bg-slate-900/50 border-r border-white/5 flex flex-col relative">
                             <div className="p-6 space-y-4 border-b border-white/5 bg-slate-900/30">
                                 <div className="grid grid-cols-2 gap-3">
-                                    <select onChange={(e) => setFilters(p => ({ ...p, type: e.target.value }))} className="w-full p-3 rounded-xl bg-slate-800 text-[11px] font-black outline-none border border-white/10 text-white">
-                                        <option value="All">TOUT TYPE</option><option>Lieu</option><option>Festival</option><option>Booker</option>
+                                    <select onChange={(e) => { setFilters(p => ({ ...p, type: e.target.value })); setSelectedDept(null); }} className="w-full p-3 rounded-xl bg-slate-800 text-[11px] font-black outline-none border border-white/10 text-white cursor-pointer">
+                                        <option value="All">TOUT TYPE</option>
+                                        <option value="Lieu">LIEU</option>
+                                        <option value="Festival">FESTIVAL</option>
+                                        <option value="Booker">BOOKER</option>
+                                        <option value="Media Spé">MEDIA SPÉ</option>
                                     </select>
-                                    <select onChange={(e) => setFilters(p => ({ ...p, cat: e.target.value }))} className="w-full p-3 rounded-xl bg-slate-800 text-[11px] font-black outline-none border border-white/10 text-white">
-                                        <option value="All">STATUT</option><option>Accessible</option><option>Plus tard</option>
+                                    <select onChange={(e) => { setFilters(p => ({ ...p, cat: e.target.value })); setSelectedDept(null); }} className="w-full p-3 rounded-xl bg-slate-800 text-[11px] font-black outline-none border border-white/10 text-white cursor-pointer">
+                                        <option value="All">STATUT</option>
+                                        <option value="Accessible">ACCESSIBLE</option>
+                                        <option value="Plus tard">PLUS TARD</option>
                                     </select>
                                 </div>
                             </div>
+
                             <div className="flex-grow flex items-center justify-center p-8 bg-slate-950/20">
                                 <svg viewBox={country === 'france' ? "0 0 600 650" : "0 0 500 450"} className="france-svg">
                                     {geoPaths.map(dept => (
                                         <path key={dept.id} d={renderPath(dept.geometry)} 
-                                            className={`dept-path ${selectedDept === dept.id ? 'selected' : ''} ${new Set(localData.map(d => String(d.dept))).has(String(dept.id)) ? 'has-data' : ''}`}
+                                            className={`dept-path ${String(selectedDept) === String(dept.id) ? 'selected' : ''} ${deptsWithData.has(String(dept.id)) ? 'has-data' : ''}`}
                                             onClick={() => setSelectedDept(selectedDept === dept.id ? null : dept.id)}
                                             onMouseEnter={() => setHoveredDept(dept)} onMouseLeave={() => setHoveredDept(null)} />
                                     ))}
@@ -248,14 +254,17 @@
                             </div>
                         </aside>
 
-                        <main className="flex-grow overflow-y-auto p-12 bg-slate-950 custom-scrollbar">
+                        <main className="flex-grow overflow-y-auto p-12 bg-slate-950 custom-scrollbar relative">
                             <div className="max-w-4xl mx-auto">
-                                <h2 className="text-6xl font-black text-white uppercase italic tracking-tighter leading-none mb-10 border-b-4 border-indigo-600 pb-4">
-                                    {selectedDept ? `Zone ${selectedDept}` : "opportunités"}
-                                </h2>
+                                <div className="flex justify-between items-end mb-10 border-b-4 border-indigo-600 pb-4">
+                                    <h2 className="text-6xl font-black text-white uppercase italic tracking-tighter leading-none">
+                                        {selectedDept ? `Zone ${selectedDept}` : "opportunités"}
+                                    </h2>
+                                    {selectedDept && <button onClick={() => setSelectedDept(null)} className="text-[10px] bg-white/10 px-3 py-1 rounded hover:bg-white/20 transition-all uppercase font-black">Effacer filtre carte</button>}
+                                </div>
                                 <div className="grid gap-3">
-                                    {filteredData.map(item => (
-                                        <div key={item.fbKey} className="glass p-6 rounded-3xl group animate-in">
+                                    {filteredData.length > 0 ? filteredData.map(item => (
+                                        <div key={item.fbKey} className="glass p-6 rounded-3xl group animate-in border border-white/5 hover:border-indigo-500/50 transition-all">
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <h4 className="text-xl font-black uppercase tracking-tight leading-tight">{item.name}</h4>
@@ -266,9 +275,11 @@
                                                 </div>
                                                 <button onClick={() => { setModalMode('edit'); setActiveEntry(item); }} className="text-indigo-400 hover:text-white transition-colors"><Icon name="edit" /></button>
                                             </div>
-                                            <p className="text-xs text-slate-400 mt-4 italic">{item.address}</p>
+                                            <p className="text-xs text-slate-400 mt-4 italic">{item.address || "Aucune note."}</p>
                                         </div>
-                                    ))}
+                                    )) : (
+                                        <div className="py-20 text-center opacity-20 italic">Aucune opportunité ne correspond à ces critères dans cette zone.</div>
+                                    )}
                                 </div>
                             </div>
                         </main>
@@ -277,20 +288,28 @@
                     {hoveredDept && <div className="map-tooltip" style={{ left: mousePos.x + 18, top: mousePos.y - 12 }}>{hoveredDept.id} - {hoveredDept.name}</div>}
 
                     {modalMode && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 modal-overlay">
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
                             <div className="glass w-full max-w-xl rounded-[3rem] overflow-hidden animate-in">
                                 <div className="bg-slate-900 p-8 flex justify-between items-center border-b border-white/5">
                                     <h3 className="font-black uppercase text-xl italic">{modalMode === 'add' ? 'Ajouter' : 'Modifier'}</h3>
                                     <button onClick={() => setModalMode(null)}><Icon name="x" /></button>
                                 </div>
                                 <form onSubmit={saveEntry} className="p-10 space-y-4">
-                                    <input required placeholder="Nom structure" className="w-full p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold" value={activeEntry.name} onChange={e => setActiveEntry({...activeEntry, name: e.target.value})} />
+                                    <input required placeholder="Nom structure" className="w-full p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold outline-none" value={activeEntry.name} onChange={e => setActiveEntry({...activeEntry, name: e.target.value})} />
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input required placeholder="Ville" className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold" value={activeEntry.city} onChange={e => setActiveEntry({...activeEntry, city: e.target.value})} />
-                                        <input required placeholder="Zone" className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold" value={activeEntry.dept} onChange={e => setActiveEntry({...activeEntry, dept: e.target.value})} />
+                                        <input required placeholder="Ville" className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold outline-none" value={activeEntry.city} onChange={e => setActiveEntry({...activeEntry, city: e.target.value})} />
+                                        <input required placeholder="Zone (CP)" className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold outline-none" value={activeEntry.dept} onChange={e => setActiveEntry({...activeEntry, dept: e.target.value})} />
                                     </div>
-                                    <textarea placeholder="Notes / Adresse" className="w-full p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold" value={activeEntry.address} onChange={e => setActiveEntry({...activeEntry, address: e.target.value})} />
-                                    <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs">Sauvegarder</button>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <select className="p-4 bg-slate-900 rounded-2xl border border-white/10 font-black text-xs text-white" value={activeEntry.type} onChange={e => setActiveEntry({...activeEntry, type: e.target.value})}>
+                                            <option>Lieu</option><option>Festival</option><option>Booker</option><option>Media Spé</option>
+                                        </select>
+                                        <select className="p-4 bg-slate-900 rounded-2xl border border-white/10 font-black text-xs text-white" value={activeEntry.cat} onChange={e => setActiveEntry({...activeEntry, cat: e.target.value})}>
+                                            <option>Accessible</option><option>Plus tard</option>
+                                        </select>
+                                    </div>
+                                    <textarea placeholder="Adresse / Notes" className="w-full p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold outline-none" value={activeEntry.address} onChange={e => setActiveEntry({...activeEntry, address: e.target.value})} />
+                                    <button type="submit" className="w-full py-5 bg-indigo-600 rounded-[2rem] font-black uppercase tracking-widest text-xs">Sauvegarder</button>
                                 </form>
                             </div>
                         </div>
