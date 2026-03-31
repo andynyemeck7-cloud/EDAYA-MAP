@@ -113,7 +113,7 @@
                 return polys.map(poly => `M ${poly[0].map(c => project(c).join(",")).join(" L ")} Z`).join(" ");
             };
 
-            // FILTRAGE LISTE (Synchronisé avec Map + Filtres)
+            // LOGIQUE DE FILTRAGE
             const filteredData = useMemo(() => {
                 return localData.filter(i => {
                     const t = filters.type === 'All' || i.type === filters.type;
@@ -123,7 +123,6 @@
                 });
             }, [localData, filters, selectedDept]);
 
-            // DÉPARTEMENTS ACTIFS (Seulement ceux qui matchent les filtres Type/Cat)
             const deptsWithData = useMemo(() => {
                 const visibleSet = new Set();
                 localData.forEach(i => {
@@ -134,6 +133,7 @@
                 return visibleSet;
             }, [localData, filters]);
 
+            // IMPORTATION AVEC BLOQUEUR DE DOUBLONS
             const handleImport = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -142,22 +142,35 @@
                     const content = event.target.result;
                     const lines = content.split(/\r?\n/).filter(l => l.trim());
                     const sep = content.includes(';') ? ';' : ',';
-                    const newData = lines.slice(1).map(line => {
+                    
+                    // Liste des noms déjà présents dans la base (en minuscule pour comparer)
+                    const existingNames = new Set(localData.map(item => item.name.trim().toLowerCase()));
+
+                    const allDataInFile = lines.slice(1).map(line => {
                         const parts = line.split(new RegExp(`${sep}(?=(?:(?:[^"]*"){2})*[^"]*$)`)).map(p => p.replace(/^"|"$/g, '').trim());
                         return { 
                             name: parts[1] || "", city: parts[2] || "", 
-                            dept: String(parts[3] || "").replace(/^0(?=\d)/, ''), // Nettoyage "07" -> "7"
+                            dept: String(parts[3] || "").replace(/^0(?=\d)/, ''), 
                             type: parts[4] || "", cat: parts[5] || "", url: parts[6] || "", 
                             email: parts[7] || "", address: parts[8] || "" 
                         };
                     }).filter(i => i.name);
 
-                    if(confirm(`Importer ${newData.length} lignes ?`)) {
+                    // Filtrer pour ne garder que ceux qui n'existent pas
+                    const finalDataToImport = allDataInFile.filter(item => !existingNames.has(item.name.trim().toLowerCase()));
+                    const duplicatesCount = allDataInFile.length - finalDataToImport.length;
+
+                    if (finalDataToImport.length === 0) {
+                        alert(`Aucune nouvelle opportunité trouvée. (${duplicatesCount} doublons ignorés)`);
+                        return;
+                    }
+
+                    if(confirm(`Importer ${finalDataToImport.length} nouvelles lignes ? (${duplicatesCount} doublons détectés et ignorés)`)) {
                         try {
-                            const promises = newData.map(item => db.ref(`opportunities_${country}`).push({ ...item, id: Date.now() + Math.random() }));
+                            const promises = finalDataToImport.map(item => db.ref(`opportunities_${country}`).push({ ...item, id: Date.now() + Math.random() }));
                             await Promise.all(promises);
                             alert("Importation réussie !");
-                        } catch (err) { alert("Erreur : " + err.message); }
+                        } catch (err) { alert("Erreur Firebase : " + err.message); }
                     }
                 };
                 reader.readAsText(file);
@@ -173,6 +186,19 @@
                 link.download = `edaya_${country}_export.csv`;
                 link.click();
             };
+
+            const saveEntry = (e) => {
+                e.preventDefault();
+                const path = `opportunities_${country}`;
+                if (modalMode === 'add') db.ref(path).push({ ...activeEntry, id: Date.now() });
+                else {
+                    const { fbKey, ...updates } = activeEntry;
+                    db.ref(`${path}/${fbKey}`).set(updates);
+                }
+                setModalMode(null);
+            };
+
+            // --- VUES ---
 
             if (step === 'login') return (
                 <div className="h-screen flex items-center justify-center bg-slate-950 p-6">
@@ -225,7 +251,7 @@
 
                     <div className="main-layout flex flex-grow overflow-hidden">
                         <aside className="bg-slate-900/50 border-r border-white/5 flex flex-col relative">
-                            <div className="p-6 space-y-4 border-b border-white/5 bg-slate-900/30">
+                            <div className="p-6 bg-slate-900/30">
                                 <div className="grid grid-cols-2 gap-3">
                                     <select onChange={(e) => { setFilters(p => ({ ...p, type: e.target.value })); setSelectedDept(null); }} className="w-full p-3 rounded-xl bg-slate-800 text-[11px] font-black outline-none border border-white/10 text-white cursor-pointer">
                                         <option value="All">TOUT TYPE</option>
@@ -241,7 +267,6 @@
                                     </select>
                                 </div>
                             </div>
-
                             <div className="flex-grow flex items-center justify-center p-8 bg-slate-950/20">
                                 <svg viewBox={country === 'france' ? "0 0 600 650" : "0 0 500 450"} className="france-svg">
                                     {geoPaths.map(dept => (
@@ -260,7 +285,7 @@
                                     <h2 className="text-6xl font-black text-white uppercase italic tracking-tighter leading-none">
                                         {selectedDept ? `Zone ${selectedDept}` : "opportunités"}
                                     </h2>
-                                    {selectedDept && <button onClick={() => setSelectedDept(null)} className="text-[10px] bg-white/10 px-3 py-1 rounded hover:bg-white/20 transition-all uppercase font-black">Effacer filtre carte</button>}
+                                    {selectedDept && <button onClick={() => setSelectedDept(null)} className="text-[10px] bg-white/10 px-3 py-1 rounded hover:bg-white/20 transition-all uppercase font-black">Retour vue globale</button>}
                                 </div>
                                 <div className="grid gap-3">
                                     {filteredData.length > 0 ? filteredData.map(item => (
@@ -278,7 +303,7 @@
                                             <p className="text-xs text-slate-400 mt-4 italic">{item.address || "Aucune note."}</p>
                                         </div>
                                     )) : (
-                                        <div className="py-20 text-center opacity-20 italic">Aucune opportunité ne correspond à ces critères dans cette zone.</div>
+                                        <div className="py-20 text-center opacity-20 italic font-black uppercase tracking-widest">Aucune donnée</div>
                                     )}
                                 </div>
                             </div>
@@ -298,18 +323,10 @@
                                     <input required placeholder="Nom structure" className="w-full p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold outline-none" value={activeEntry.name} onChange={e => setActiveEntry({...activeEntry, name: e.target.value})} />
                                     <div className="grid grid-cols-2 gap-4">
                                         <input required placeholder="Ville" className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold outline-none" value={activeEntry.city} onChange={e => setActiveEntry({...activeEntry, city: e.target.value})} />
-                                        <input required placeholder="Zone (CP)" className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold outline-none" value={activeEntry.dept} onChange={e => setActiveEntry({...activeEntry, dept: e.target.value})} />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <select className="p-4 bg-slate-900 rounded-2xl border border-white/10 font-black text-xs text-white" value={activeEntry.type} onChange={e => setActiveEntry({...activeEntry, type: e.target.value})}>
-                                            <option>Lieu</option><option>Festival</option><option>Booker</option><option>Media Spé</option>
-                                        </select>
-                                        <select className="p-4 bg-slate-900 rounded-2xl border border-white/10 font-black text-xs text-white" value={activeEntry.cat} onChange={e => setActiveEntry({...activeEntry, cat: e.target.value})}>
-                                            <option>Accessible</option><option>Plus tard</option>
-                                        </select>
+                                        <input required placeholder="Zone" className="p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold outline-none" value={activeEntry.dept} onChange={e => setActiveEntry({...activeEntry, dept: e.target.value})} />
                                     </div>
                                     <textarea placeholder="Adresse / Notes" className="w-full p-4 bg-slate-900 text-white rounded-2xl border border-white/10 font-bold outline-none" value={activeEntry.address} onChange={e => setActiveEntry({...activeEntry, address: e.target.value})} />
-                                    <button type="submit" className="w-full py-5 bg-indigo-600 rounded-[2rem] font-black uppercase tracking-widest text-xs">Sauvegarder</button>
+                                    <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-xl">Sauvegarder</button>
                                 </form>
                             </div>
                         </div>
